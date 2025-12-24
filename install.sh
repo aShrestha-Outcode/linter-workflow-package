@@ -106,18 +106,20 @@ if command -v git &> /dev/null; then
     exit 1
   fi
   
-  cd "$TEMP_DIR/repo"
+  # Change to repository directory
+  cd "$TEMP_DIR/repo" || {
+    echo -e "   ${RED}❌ Failed to change to repository directory${NC}"
+    exit 1
+  }
   
   # Debug: Show what's actually in the repo
   echo -e "   ${BLUE}ℹ️${NC}  Checking repository contents..."
   echo -e "   ${BLUE}   Current directory: $(pwd)${NC}"
-  echo -e "   ${BLUE}   All items in repository root:${NC}"
-  ls -la | while read line; do
-    echo "     $line"
-  done
+  echo -e "   ${BLUE}   Folders found:${NC}"
+  ls -d */ 2>/dev/null | sed 's|/$||' | sed 's/^/     - /' || echo "     (checking...)"
   echo ""
   
-  # Check if language folder exists
+  # Check if language folder exists (simple, direct check)
   if [ ! -d "$LANGUAGE_FOLDER" ]; then
     echo -e "   ${RED}❌ Error: Language folder '$LANGUAGE_FOLDER' not found in repository${NC}"
     echo "   Looking for: $LANGUAGE_FOLDER (for language: $LANGUAGE)"
