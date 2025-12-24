@@ -456,6 +456,12 @@ else
   echo -e "   ${YELLOW}⚠️${NC}  Could not remove folder (safety check - folder might be outside project)"
 fi
 
+# Clean up install.sh from project root
+if [ -f "$PROJECT_ROOT/install.sh" ]; then
+  rm -f "$PROJECT_ROOT/install.sh"
+  echo -e "   ${GREEN}✅${NC} Removed install.sh"
+fi
+
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 
