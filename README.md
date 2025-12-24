@@ -4,20 +4,53 @@ Code quality standards, CI/CD workflows, and Git branching strategy for all lang
 
 ## 🚀 Quick Start
 
-### Flutter Projects
+### Step-by-Step Setup
+
+1. **Create your project** (Flutter, React Native, etc.)
+
+2. **Navigate to your project folder:**
+   ```bash
+   cd your-project-folder
+   ```
+
+3. **Download the install script:**
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/aShrestha-Outcode/linter-workflow-package/main/install.sh -o install.sh
+   ```
+
+4. **Make the script executable:**
+   ```bash
+   chmod +x install.sh
+   # Or: chmod 777 install.sh
+   ```
+
+5. **Run the installer:**
+   ```bash
+   ./install.sh
+   ```
+
+6. **Select your language** when prompted:
+   - `1` for Flutter
+   - `2` for React Native (coming soon)
+   - `3` for Node.js (coming soon)
+
+7. **That's it!** The script will automatically:
+   - Download the language-specific setup package
+   - Run the setup script
+   - Install all dependencies
+   - Configure Git hooks
+   - Set up CI/CD workflows
+   - Guide you through GitHub remote configuration (optional)
+
+### Alternative: Non-Interactive Mode
+
+If you want to skip the language selection prompt:
 
 ```bash
-# One command setup
-curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+OUTCODE_LANGUAGE=flutter ./install.sh
 ```
 
 **⚠️ Important**: Use `raw.githubusercontent.com` (not `github.com/tree/...`) to get the raw script file.
-
-### React Native Projects (coming soon)
-
-```bash
-OUTCODE_LANGUAGE=reactnative curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
-```
 
 ## 📁 Repository Structure
 
@@ -59,15 +92,19 @@ Each language package includes:
 ### Custom Repository URL
 
 ```bash
-OUTCODE_REPO_URL=https://github.com/your-org/custom-repo.git \
-curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+OUTCODE_REPO_URL=https://github.com/your-org/custom-repo.git ./install.sh
 ```
 
 ### Custom Branch
 
 ```bash
-OUTCODE_BRANCH=develop \
-curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+OUTCODE_BRANCH=develop ./install.sh
+```
+
+### Non-Interactive Language Selection
+
+```bash
+OUTCODE_LANGUAGE=flutter ./install.sh
 ```
 
 ## 🤝 Contributing

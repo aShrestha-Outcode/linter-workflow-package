@@ -446,5 +446,16 @@ echo "   • Git Strategy: docs/engineering/outcode-git-branching-strategy.md"
 echo "   • Hooks Standard: docs/engineering/outcode-husky-hooks-standard.md"
 echo "   • Workflows: .github/workflows/README.md"
 echo ""
+
+# Clean up the downloaded folder (mandatory)
+echo -e "${BLUE}🗑️  Cleaning up...${NC}"
+if [ -d "$PACKAGE_DIR" ] && [ "$PACKAGE_DIR" != "$PROJECT_ROOT" ] && [ "$PACKAGE_DIR" != "." ]; then
+  rm -rf "$PACKAGE_DIR"
+  echo -e "   ${GREEN}✅${NC} Removed downloaded folder: $(basename "$PACKAGE_DIR")"
+else
+  echo -e "   ${YELLOW}⚠️${NC}  Could not remove folder (safety check - folder might be outside project)"
+fi
+
+echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 
