@@ -217,22 +217,30 @@ else
 fi
 
 echo ""
+echo -e "${BLUE}🚀 Running setup script...${NC}"
+echo ""
+
+# Run the setup script from the downloaded folder
+SETUP_SCRIPT="$PROJECT_ROOT/$LANGUAGE_FOLDER/setup.sh"
+if [ -f "$SETUP_SCRIPT" ]; then
+  chmod +x "$SETUP_SCRIPT"
+  cd "$PROJECT_ROOT"
+  bash "$SETUP_SCRIPT"
+else
+  echo -e "   ${RED}❌ Setup script not found at: $SETUP_SCRIPT${NC}"
+  echo ""
+  echo -e "   ${YELLOW}Manual setup:${NC}"
+  echo -e "   1. Navigate to the downloaded folder:"
+  echo -e "      ${GREEN}cd $LANGUAGE_FOLDER${NC}"
+  echo ""
+  echo -e "   2. Run the setup script:"
+  echo -e "      ${GREEN}./setup.sh${NC}"
+  exit 1
+fi
+
+echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Download Complete!${NC}"
+echo -e "${GREEN}✅ Setup Complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo -e "${BLUE}Next steps:${NC}"
-echo ""
-echo -e "   1. Navigate to the downloaded folder:"
-echo -e "      ${GREEN}cd $LANGUAGE_FOLDER${NC}"
-echo ""
-echo -e "   2. Run the setup script:"
-echo -e "      ${GREEN}./setup.sh${NC}"
-echo ""
-echo -e "   The setup script will guide you through:"
-echo -e "     - Copying files to your project"
-echo -e "     - Installing dependencies"
-echo -e "     - Setting up Git hooks"
-echo -e "     - Configuring GitHub remote (optional)"
 echo ""
 
