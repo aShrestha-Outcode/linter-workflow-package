@@ -1,6 +1,6 @@
 #!/bin/bash
-# Outcode Flutter Setup - One-Command Installer
-# Downloads the Flutter setup package from Git and runs setup
+# Outcode Setup - Language Package Installer
+# Downloads the selected language setup package from Git
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
@@ -8,6 +8,10 @@
 # Or download and run:
 #   curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh -o install.sh
 #   bash install.sh
+#
+# After running this script:
+#   1. cd into the downloaded folder (e.g., linter-workflow-flutter)
+#   2. Run ./setup.sh to complete the setup
 
 set -euo pipefail
 
@@ -21,71 +25,88 @@ NC='\033[0m'
 # Configuration
 REPO_URL="${OUTCODE_REPO_URL:-https://github.com/aShrestha-Outcode/linter-workflow-package.git}"
 BRANCH="${OUTCODE_BRANCH:-main}"
-LANGUAGE="${OUTCODE_LANGUAGE:-flutter}"
 TEMP_DIR=$(mktemp -d)
-PACKAGE_DIR="outcode-setup"
 
-# Map language names to folder names in repository (bash 3.2 compatible)
-case "$LANGUAGE" in
-  flutter)
-    LANGUAGE_FOLDER="linter-workflow-flutter"
-    ;;
-  reactnative)
-    LANGUAGE_FOLDER="linter-workflow-reactnative"
-    ;;
-  nodejs)
-    LANGUAGE_FOLDER="linter-workflow-nodejs"
-    ;;
-  *)
-    # Default: use language name as folder name
-    LANGUAGE_FOLDER="$LANGUAGE"
-    ;;
-esac
+# Available languages (bash 3.2 compatible - using simple variables)
+AVAILABLE_LANGUAGES="flutter reactnative nodejs"
+
+# Function to get folder name for a language
+get_language_folder() {
+  local lang="$1"
+  case "$lang" in
+    flutter)
+      echo "linter-workflow-flutter"
+      ;;
+    reactnative)
+      echo "linter-workflow-reactnative"
+      ;;
+    nodejs)
+      echo "linter-workflow-nodejs"
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
+
+# Function to prompt user for language selection
+select_language() {
+  echo -e "${BLUE}Available languages:${NC}"
+  local i=1
+  local count=0
+  for lang in $AVAILABLE_LANGUAGES; do
+    echo -e "   ${GREEN}$i${NC}) $lang"
+    ((i++))
+    ((count++))
+  done
+  echo ""
+  
+  while true; do
+    read -p "Select language (1-$count): " choice
+    
+    # Check if input is a number
+    if [[ "$choice" =~ ^[0-9]+$ ]]; then
+      if [ "$choice" -ge 1 ] && [ "$choice" -le "$count" ]; then
+        local idx=1
+        for lang in $AVAILABLE_LANGUAGES; do
+          if [ "$idx" -eq "$choice" ]; then
+            SELECTED_LANGUAGE="$lang"
+            LANGUAGE_FOLDER=$(get_language_folder "$SELECTED_LANGUAGE")
+            return 0
+          fi
+          ((idx++))
+        done
+      else
+        echo -e "   ${RED}Invalid choice. Please enter a number between 1 and $count.${NC}"
+      fi
+    else
+      echo -e "   ${RED}Invalid input. Please enter a number.${NC}"
+    fi
+  done
+}
 
 # Cleanup function
 cleanup() {
   if [ -d "$TEMP_DIR" ]; then
     rm -rf "$TEMP_DIR"
   fi
-  if [ -d "$PACKAGE_DIR" ] && [ "$PACKAGE_DIR" != "." ]; then
-    # Don't remove if user wants to keep it
-    :
-  fi
 }
 trap cleanup EXIT
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🚀 Outcode Setup - $LANGUAGE${NC}"
+echo -e "${BLUE}🚀 Outcode Setup${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 # Get current directory (should be project root)
 PROJECT_ROOT="$(pwd)"
 
-# Verify we're in the right project type
-case "$LANGUAGE" in
-  flutter)
-    if [ ! -f "$PROJECT_ROOT/pubspec.yaml" ]; then
-      echo -e "${RED}❌ Error: Not in a Flutter project directory${NC}"
-      echo "   Please run this script from your Flutter project root (where pubspec.yaml is located)"
-      exit 1
-    fi
-    ;;
-  reactnative)
-    if [ ! -f "$PROJECT_ROOT/package.json" ] || [ ! -f "$PROJECT_ROOT/app.json" ]; then
-      echo -e "${RED}❌ Error: Not in a React Native project directory${NC}"
-      exit 1
-    fi
-    ;;
-  *)
-    echo -e "${RED}❌ Error: Unknown language: $LANGUAGE${NC}"
-    echo "   Supported languages: flutter, reactnative"
-    exit 1
-    ;;
-esac
+# Prompt user to select language
+select_language
 
+echo ""
+echo -e "Selected language: ${GREEN}$SELECTED_LANGUAGE${NC}"
 echo -e "Project directory: ${GREEN}$PROJECT_ROOT${NC}"
-echo -e "Language: ${GREEN}$LANGUAGE${NC}"
 echo ""
 
 # Download method
@@ -155,8 +176,9 @@ if command -v git &> /dev/null; then
   
   echo -e "   ${GREEN}✅ Found folder: $LANGUAGE_FOLDER${NC}"
   
-  # Copy language folder to project
-  cp -r "$LANGUAGE_FOLDER" "$PROJECT_ROOT/$PACKAGE_DIR"
+  # Copy language folder to project root
+  echo -e "   ${BLUE}Copying $LANGUAGE_FOLDER to project directory...${NC}"
+  cp -r "$LANGUAGE_FOLDER" "$PROJECT_ROOT/"
   echo -e "   ${GREEN}✅${NC} Package downloaded successfully"
   
 else
@@ -165,32 +187,22 @@ else
 fi
 
 echo ""
-echo -e "${BLUE}🚀 Running setup script...${NC}"
-echo ""
-
-# Run the setup script
-cd "$PROJECT_ROOT/$PACKAGE_DIR"
-if [ -f "setup.sh" ]; then
-  chmod +x setup.sh
-  bash setup.sh
-else
-  echo -e "   ${RED}❌ Setup script not found${NC}"
-  exit 1
-fi
-
-# Ask about cleanup
-echo ""
-read -p "Remove downloaded package folder? (y/N): " REMOVE_PACKAGE
-if [[ "$REMOVE_PACKAGE" =~ ^[Yy]$ ]]; then
-  rm -rf "$PROJECT_ROOT/$PACKAGE_DIR"
-  echo -e "   ${GREEN}✅${NC} Package folder removed"
-else
-  echo -e "   ${YELLOW}ℹ️${NC}  Package folder kept at: $PROJECT_ROOT/$PACKAGE_DIR"
-  echo -e "   ${BLUE}   You can remove it later: rm -rf $PACKAGE_DIR${NC}"
-fi
-
-echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Setup Complete!${NC}"
+echo -e "${GREEN}✅ Download Complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+echo -e "${BLUE}Next steps:${NC}"
+echo ""
+echo -e "   1. Navigate to the downloaded folder:"
+echo -e "      ${GREEN}cd $LANGUAGE_FOLDER${NC}"
+echo ""
+echo -e "   2. Run the setup script:"
+echo -e "      ${GREEN}./setup.sh${NC}"
+echo ""
+echo -e "   The setup script will guide you through:"
+echo -e "     - Copying files to your project"
+echo -e "     - Installing dependencies"
+echo -e "     - Setting up Git hooks"
+echo -e "     - Configuring GitHub remote (optional)"
+echo ""
 
