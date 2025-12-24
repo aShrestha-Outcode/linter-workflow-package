@@ -96,15 +96,25 @@ if command -v git &> /dev/null; then
   echo -e "   ${GREEN}Using Git to clone package...${NC}"
   
   # Clone the repository (don't use sparse checkout initially - it might hide folders)
-  echo -e "   ${BLUE}Cloning repository...${NC}"
-  git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$TEMP_DIR/repo" 2>&1 | grep -v "^Cloning\|^remote:\|^Receiving\|^Resolving\|^Updating" || true
+  echo -e "   ${BLUE}Cloning repository from $REPO_URL (branch: $BRANCH)...${NC}"
+  if ! git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$TEMP_DIR/repo" 2>&1; then
+    echo -e "   ${RED}❌ Failed to clone repository${NC}"
+    echo "   Please check:"
+    echo "     - Repository URL is correct: $REPO_URL"
+    echo "     - Branch exists: $BRANCH"
+    echo "     - You have access to the repository"
+    exit 1
+  fi
   
   cd "$TEMP_DIR/repo"
   
   # Debug: Show what's actually in the repo
   echo -e "   ${BLUE}ℹ️${NC}  Checking repository contents..."
-  echo -e "   ${BLUE}   Repository structure:${NC}"
-  ls -la | grep "^d" | grep -v "^\.$" | grep -v "^\.\.$" | awk '{print "     - " $NF}' || echo "     (checking...)"
+  echo -e "   ${BLUE}   Current directory: $(pwd)${NC}"
+  echo -e "   ${BLUE}   All items in repository root:${NC}"
+  ls -la | while read line; do
+    echo "     $line"
+  done
   echo ""
   
   # Check if language folder exists
@@ -113,24 +123,35 @@ if command -v git &> /dev/null; then
     echo "   Looking for: $LANGUAGE_FOLDER (for language: $LANGUAGE)"
     echo ""
     echo -e "   ${YELLOW}Available folders in repository:${NC}"
-    ls -d */ 2>/dev/null | sed 's|/$||' | grep -v "^\.$" | sed 's/^/     - /' || echo "     (none found)"
+    if ls -d */ >/dev/null 2>&1; then
+      ls -d */ | sed 's|/$||' | while read folder; do
+        echo "     - $folder"
+      done
+    else
+      echo "     (no folders found)"
+    fi
     echo ""
-    echo -e "   ${BLUE}All files and folders:${NC}"
-    ls -la | head -20
+    echo -e "   ${YELLOW}All files and directories:${NC}"
+    ls -la
     echo ""
     echo -e "   ${BLUE}Debugging info:${NC}"
     echo "     Repository URL: $REPO_URL"
     echo "     Branch: $BRANCH"
     echo "     Current directory: $(pwd)"
     echo "     Looking for folder: $LANGUAGE_FOLDER"
+    echo "     Git branch: $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')"
+    echo "     Git commit: $(git rev-parse HEAD 2>/dev/null | cut -c1-7 || echo 'unknown')"
     echo ""
     echo -e "   ${YELLOW}Possible solutions:${NC}"
     echo "     1. Verify the folder '$LANGUAGE_FOLDER' exists in the GitHub repository"
     echo "     2. Check the branch name (current: $BRANCH)"
     echo "     3. Visit: https://github.com/aShrestha-Outcode/linter-workflow-package/tree/$BRANCH"
     echo "     4. Ensure the folder is committed and pushed to GitHub"
+    echo "     5. Check if the folder name matches exactly (case-sensitive)"
     exit 1
   fi
+  
+  echo -e "   ${GREEN}✅ Found folder: $LANGUAGE_FOLDER${NC}"
   
   # Copy language folder to project
   cp -r "$LANGUAGE_FOLDER" "$PROJECT_ROOT/$PACKAGE_DIR"
