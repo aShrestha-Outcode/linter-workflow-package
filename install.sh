@@ -19,7 +19,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Configuration
-REPO_URL="${OUTCODE_REPO_URL:-https://github.com/your-org/linter-workflow-package.git}"
+REPO_URL="${OUTCODE_REPO_URL:-https://github.com/aShrestha-Outcode/linter-workflow-package.git}"
 BRANCH="${OUTCODE_BRANCH:-main}"
 LANGUAGE="${OUTCODE_LANGUAGE:-flutter}"
 TEMP_DIR=$(mktemp -d)
