@@ -11,6 +11,8 @@ Code quality standards, CI/CD workflows, and Git branching strategy for all lang
 curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
 ```
 
+**⚠️ Important**: Use `raw.githubusercontent.com` (not `github.com/tree/...`) to get the raw script file.
+
 ### React Native Projects (coming soon)
 
 ```bash

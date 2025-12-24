@@ -11,6 +11,8 @@ This package contains all the necessary files to set up Outcode Flutter code qua
 curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
 ```
 
+**⚠️ Important**: Use `raw.githubusercontent.com` (not `github.com/tree/...`) to get the raw script file.
+
 That's it! The installer will:
 1. Download the Flutter setup package from GitHub
 2. Copy all files to the correct locations
