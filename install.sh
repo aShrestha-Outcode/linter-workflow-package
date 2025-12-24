@@ -25,14 +25,22 @@ LANGUAGE="${OUTCODE_LANGUAGE:-flutter}"
 TEMP_DIR=$(mktemp -d)
 PACKAGE_DIR="outcode-setup"
 
-# Map language names to folder names in repository
-declare -A LANGUAGE_FOLDERS
-LANGUAGE_FOLDERS["flutter"]="linter-workflow-flutter"
-LANGUAGE_FOLDERS["reactnative"]="linter-workflow-reactnative"
-LANGUAGE_FOLDERS["nodejs"]="linter-workflow-nodejs"
-
-# Get the actual folder name
-LANGUAGE_FOLDER="${LANGUAGE_FOLDERS[$LANGUAGE]:-$LANGUAGE}"
+# Map language names to folder names in repository (bash 3.2 compatible)
+case "$LANGUAGE" in
+  flutter)
+    LANGUAGE_FOLDER="linter-workflow-flutter"
+    ;;
+  reactnative)
+    LANGUAGE_FOLDER="linter-workflow-reactnative"
+    ;;
+  nodejs)
+    LANGUAGE_FOLDER="linter-workflow-nodejs"
+    ;;
+  *)
+    # Default: use language name as folder name
+    LANGUAGE_FOLDER="$LANGUAGE"
+    ;;
+esac
 
 # Cleanup function
 cleanup() {
