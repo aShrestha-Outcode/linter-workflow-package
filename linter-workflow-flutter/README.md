@@ -2,6 +2,23 @@
 
 This package contains all the necessary files to set up Outcode Flutter code quality standards, CI/CD workflows, and Git branching strategy for a new Flutter project.
 
+## 🚀 Quick Setup
+
+**One command setup** - No manual copying needed!
+
+```bash
+# From your Flutter project root
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+```
+
+That's it! The installer will:
+1. Download the Flutter setup package from GitHub
+2. Copy all files to the correct locations
+3. Install npm dependencies
+4. Set up Git hooks
+5. Optionally set up GitHub remote and branches
+6. Clean up downloaded files (optional)
+
 ## 📦 What's Included
 
 - ✅ **package.json** - Node.js dependencies (Husky, Commitlint, lint-staged)
@@ -15,35 +32,9 @@ This package contains all the necessary files to set up Outcode Flutter code qua
 - ✅ **tool/** - Quality check scripts (quality.sh, validate-setup.sh)
 - ✅ **docs/engineering/** - Engineering documentation (Git strategy, hooks standard)
 
-## 🚀 Quick Setup
-
-### Step 1: Copy the Package
-
-Copy the entire `linter-workflow-package` folder to your Flutter project root:
-
-```bash
-# Example: If your Flutter project is at /path/to/my-flutter-app
-cp -r linter-workflow-package /path/to/my-flutter-app/
-```
-
-### Step 2: Run the Setup Script
-
-Navigate to your Flutter project and run the setup script:
-
-```bash
-cd /path/to/my-flutter-app
-./linter-workflow-package/setup.sh
-```
-
-That's it! The script will:
-1. Copy all files to the correct locations
-2. Install npm dependencies
-3. Set up Git hooks
-4. Optionally set up GitHub remote and branches
-
 ## 📋 Setup Process
 
-The setup script performs the following steps:
+The setup script automatically performs the following steps:
 
 1. **Copy root-level files** - package.json, analysis_options.yaml, commitlint.config.js, .fvmrc, .nvmrc
 2. **Update .gitignore** - Merges with existing .gitignore (won't overwrite)
@@ -51,8 +42,11 @@ The setup script performs the following steps:
 4. **Set up GitHub Actions** - Copies all workflow files to .github/workflows/
 5. **Copy quality scripts** - Copies tool/quality.sh and tool/validate-setup.sh
 6. **Copy documentation** - Copies engineering docs to docs/engineering/
-7. **Install npm dependencies** - Runs `npm install` to set up Husky and other tools
-8. **Optional Git setup** - Prompts for GitHub URL and branch creation
+7. **Update pubspec.yaml** - Adds very_good_analysis to dev_dependencies
+8. **Install Flutter dependencies** - Runs `flutter pub get`
+9. **Install npm dependencies** - Runs `npm install` to set up Husky and other tools
+10. **Set up Husky hooks path** - Configures Git hooks path
+11. **Optional Git setup** - Prompts for GitHub URL and branch creation
 
 ## 🔧 Prerequisites
 
@@ -71,11 +65,8 @@ Before running the setup script, ensure you have:
 flutter create my_app
 cd my_app
 
-# Copy package folder
-cp -r /path/to/linter-workflow-package .
-
-# Run setup
-./linter-workflow-package/setup.sh
+# One command setup
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
 ```
 
 ### Example 2: Existing Flutter Project
@@ -84,43 +75,56 @@ cp -r /path/to/linter-workflow-package .
 # Navigate to existing project
 cd /path/to/existing-flutter-project
 
-# Copy package folder
-cp -r /path/to/linter-workflow-package .
+# One command setup (will merge with existing files)
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+```
 
-# Run setup (will merge with existing files)
-./linter-workflow-package/setup.sh
+### Example 3: Custom Repository or Branch
+
+```bash
+# Use custom repository
+OUTCODE_REPO_URL=https://github.com/your-org/custom-repo.git \
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+
+# Use custom branch
+OUTCODE_BRANCH=develop \
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
 ```
 
 ## ⚙️ What Gets Copied
 
+The setup script copies files from the downloaded package to your project:
+
 ```
-linter-workflow-package/
-├── setup.sh                    # Setup script (run this)
-├── package.json                 → project root
-├── analysis_options.yaml        → project root
-├── commitlint.config.js         → project root
-├── .fvmrc                       → project root
-├── .nvmrc                       → project root
-├── .gitignore                   → project root (merged)
-├── .husky/                      → project root/.husky/
+linter-workflow-flutter/         (downloaded temporarily)
+├── setup.sh                     # Setup script (runs automatically)
+├── package.json                  → project root
+├── analysis_options.yaml         → project root
+├── commitlint.config.js          → project root
+├── .fvmrc                        → project root
+├── .nvmrc                        → project root
+├── .gitignore                    → project root (merged)
+├── .husky/                       → project root/.husky/
 │   ├── commit-msg
 │   ├── pre-commit
 │   ├── pre-push
 │   ├── pre-commit-branch-protection
 │   └── pre-push-branch-protection
-├── .github/workflows/           → project root/.github/workflows/
+├── .github/workflows/            → project root/.github/workflows/
 │   ├── quality.yml
 │   ├── deploy-uat.yml
 │   ├── deploy-prod.yml
 │   ├── merge-prod-to-main.yml
 │   └── README.md
-├── tool/                        → project root/tool/
+├── tool/                         → project root/tool/
 │   ├── quality.sh
 │   └── validate-setup.sh
-└── docs/engineering/           → project root/docs/engineering/
+└── docs/engineering/            → project root/docs/engineering/
     ├── outcode-git-branching-strategy.md
     └── outcode-husky-hooks-standard.md
 ```
+
+**Note**: The downloaded package folder (`outcode-setup`) is automatically removed after setup (unless you choose to keep it).
 
 ## ✅ After Setup
 
@@ -184,8 +188,9 @@ The setup script is smart about existing files:
 **Problem**: Script can't find Flutter project
 
 **Solution**: 
-- Ensure `linter-workflow-package` folder is inside your Flutter project directory
-- Verify `pubspec.yaml` exists in the parent directory
+- Ensure you're running the command from your Flutter project root directory
+- Verify `pubspec.yaml` exists in the current directory
+- Run: `pwd` to check your current location
 
 ### npm install Fails
 
@@ -229,51 +234,45 @@ After setup, see the following documentation:
 - **Hooks Standard**: `docs/engineering/outcode-husky-hooks-standard.md`
 - **Workflows**: `.github/workflows/README.md`
 
-## 🗑️ Cleanup (Optional)
-
-After setup is complete, you can optionally remove the `linter-workflow-package` folder:
-
-```bash
-rm -rf linter-workflow-package
-```
-
-All files have been copied to the project root, so the package folder is no longer needed.
-
-## 📦 Distribution
-
-To share this package with your team:
-
-1. **Zip the folder**:
-   ```bash
-   zip -r linter-workflow-package.zip linter-workflow-package/
-   ```
-
-2. **Or use Git**:
-   ```bash
-   git clone <repo-url>
-   cd <repo>
-   cp -r linter-workflow-package /path/to/new-project/
-   ```
-
-3. **Or host it**:
-   - Upload to internal file server
-   - Share via company wiki
-   - Include in onboarding documentation
-
 ## 🔄 Updates
 
-When the package is updated:
+To update to the latest version, simply run the install command again:
 
-1. Copy the new `linter-workflow-package` folder
-2. Run `setup.sh` again (it will update existing files)
-3. Or manually copy specific files you need to update
+```bash
+curl -fsSL https://raw.githubusercontent.com/your-org/linter-workflow-package/main/install.sh | bash
+```
+
+The setup script is **idempotent** - it's safe to run multiple times and will update existing files as needed.
+
+## 📦 Repository Structure
+
+This package is part of the `linter-workflow-package` repository:
+
+```
+linter-workflow-package/
+├── install.sh                   # Universal installer (downloads language packages)
+├── README.md                     # Main repository documentation
+└── linter-workflow-flutter/     # This package
+    ├── setup.sh
+    ├── package.json
+    └── ... (all setup files)
+```
+
+See the [main repository README](../README.md) for information about other languages and the overall structure.
 
 ## 📝 Notes
 
-- The script is **idempotent** - safe to run multiple times
+- The setup script is **idempotent** - safe to run multiple times
 - Existing files are handled carefully (merged or prompted)
 - All hooks are made executable automatically
-- The script works on macOS, Linux, and Windows (with Git Bash)
+- Works on macOS, Linux, and Windows (with Git Bash)
+- No manual file copying needed - everything is automated
+
+## 🔗 Related Documentation
+
+- [Main Repository README](../README.md) - Overview of all language packages
+- [Git Branching Strategy](./docs/engineering/outcode-git-branching-strategy.md) - Git workflow documentation
+- [Husky Hooks Standard](./docs/engineering/outcode-husky-hooks-standard.md) - Git hooks documentation
 
 ---
 
