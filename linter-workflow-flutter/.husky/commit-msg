@@ -1,0 +1,22 @@
+#!/bin/sh
+# .husky/commit-msg
+# Validate commit message follows conventional commit format
+
+set -e
+
+echo "📝 Validating commit message format..."
+
+npx --no-install commitlint --edit "$1" || {
+  echo "❌ Invalid commit message format. Commit aborted."
+  echo ""
+  echo "   Use format: type(scope): description"
+  echo ""
+  echo "   Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build"
+  echo "   Examples:"
+  echo "     feat: add user authentication"
+  echo "     fix: resolve memory leak in image loader"
+  echo "     docs: update README with setup instructions"
+  exit 1
+}
+
+echo "✅ Commit message format is valid."

@@ -1,0 +1,50 @@
+#!/bin/sh
+# .husky/pre-commit-branch-protection
+# Prevents commits directly to protected branches (local safeguard)
+
+# Allow bypass for setup/workflow configuration (use sparingly!)
+# Usage: ALLOW_PROTECTED_BRANCHES=true git commit -m "message"
+if [ "$ALLOW_PROTECTED_BRANCHES" = "true" ]; then
+  echo "⚠️  WARNING: Bypassing branch protection (ALLOW_PROTECTED_BRANCHES=true)"
+  echo "   This should only be used during initial setup or workflow configuration."
+  return 0
+fi
+
+# Protected branches (cannot commit directly - must use feature branches)
+PROTECTED_BRANCHES="main develop uat prod"
+
+# Get current branch name
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+# If we can't determine branch, skip check (might be in detached HEAD state)
+if [ -z "$CURRENT_BRANCH" ]; then
+  return 0
+fi
+
+# Check if current branch is protected
+for branch in $PROTECTED_BRANCHES; do
+  if [ "$CURRENT_BRANCH" = "$branch" ]; then
+    echo "❌ ERROR: Commits to '$branch' are not allowed!"
+    echo ""
+    echo "Please work on a feature branch instead:"
+    echo "  1. Create a feature branch: git checkout -b feature/your-feature"
+    echo "  2. Make your changes and commit"
+    echo "  3. Push the feature branch: git push origin feature/your-feature"
+    echo "  4. Create a PR on GitHub: $branch ← feature/your-feature"
+    echo ""
+    echo "⚠️  Note: This prevents accidental commits to protected branches."
+    echo "   Always work on feature branches, never directly on $branch."
+    echo ""
+    echo "To bypass this check (for setup only):"
+    echo "  ALLOW_PROTECTED_BRANCHES=true git commit -m 'message'"
+    echo ""
+    echo "Or use --no-verify (NOT RECOMMENDED):"
+    echo "  git commit --no-verify -m 'message'"
+    return 1
+  fi
+done
+
+# Branch is not protected, allow commit
+# Don't exit here - return 0 instead so the parent script continues
+return 0
+

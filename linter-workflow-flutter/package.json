@@ -1,0 +1,32 @@
+{
+  "name": "outcode_flutter_app",
+  "version": "1.0.0",
+  "description": "A new Flutter project.",
+  "main": "commitlint.config.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "format": "dart format .",
+    "format:check": "dart format --set-exit-if-changed .",
+    "quality:quick": "bash tool/quality.sh quick",
+    "quality:check": "bash tool/quality.sh check",
+    "quality:ci": "bash tool/quality.sh ci",
+    "validate": "bash tool/validate-setup.sh"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "*.dart": [
+      "dart format"
+    ]
+  },
+  "author": "",
+  "license": "ISC"
+}

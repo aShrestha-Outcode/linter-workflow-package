@@ -1,0 +1,71 @@
+name: Code Quality
+
+on:
+  pull_request:
+    # Run on PRs targeting protected branches
+    # This is the primary trigger - PRs are the main workflow
+    branches:
+      - main
+      - develop
+      - uat
+      - prod
+      - 'release/**'
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    # Cancel previous runs if new commits are pushed to the same PR
+    # This prevents wasting minutes on outdated runs
+    concurrency:
+      group: quality-${{ github.ref }}
+      cancel-in-progress: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Read Flutter version from .fvmrc
+        id: flutter-version
+        run: |
+          if [ -f .fvmrc ]; then
+            FLUTTER_VERSION=$(grep -E '^flutterSdkVersion:' .fvmrc | sed 's/flutterSdkVersion: *"\(.*\)"/\1/' | tr -d ' ')
+            echo "version=$FLUTTER_VERSION" >> $GITHUB_OUTPUT
+          else
+            # Default to latest stable Flutter version
+            # Flutter 3.38.4 includes Dart 3.10.3+
+            echo "version=3.38.4" >> $GITHUB_OUTPUT
+          fi
+          echo "Using Flutter version: ${{ steps.flutter-version.outputs.version }}"
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: 'stable'
+          cache: true
+      
+      - name: Verify Flutter version
+        run: |
+          flutter --version
+          echo "Flutter SDK version check:"
+          flutter --version | grep -E "Flutter|Dart" || true
+      
+      - name: Install Node dependencies
+        run: npm ci
+      
+      - name: Install Flutter dependencies
+        run: flutter pub get
+      
+      - name: Verify setup
+        run: npm run validate || echo "⚠️ Setup validation failed, continuing anyway..."
+      
+      - name: Run quality checks
+        run: npm run quality:ci
+

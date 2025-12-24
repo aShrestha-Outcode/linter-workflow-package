@@ -1,0 +1,5 @@
+flutterSdkVersion: "3.38.4"
+# Recommended: Pin Flutter SDK version for consistent builds
+# Install FVM: https://fvm.app/docs/getting_started/installation
+# Usage: fvm install && fvm use
+

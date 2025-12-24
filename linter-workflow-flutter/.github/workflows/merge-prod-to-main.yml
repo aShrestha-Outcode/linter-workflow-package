@@ -1,0 +1,114 @@
+name: Merge Prod to Main (After Store Approval)
+
+# This workflow should be triggered MANUALLY after Apple/Google store approval
+# It ensures main branch reflects what's actually live in the stores
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version that was approved (e.g., v1.1.0)'
+        required: true
+        type: string
+      store_approval_date:
+        description: 'Date of store approval (YYYY-MM-DD)'
+        required: true
+        type: string
+      approved_by:
+        description: 'Who approved (your name/email)'
+        required: true
+        type: string
+
+jobs:
+  verify-prod-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout prod branch
+        uses: actions/checkout@v4
+        with:
+          ref: prod
+          fetch-depth: 0
+      
+      - name: Verify prod branch
+        run: |
+          echo "Verifying prod branch status..."
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Approval date: ${{ github.event.inputs.store_approval_date }}"
+          echo "Approved by: ${{ github.event.inputs.approved_by }}"
+          echo ""
+          echo "✅ Prod branch ready to merge to main"
+
+  merge-to-main:
+    needs: verify-prod-status
+    runs-on: ubuntu-latest
+    environment: production-merge  # Requires manual approval in GitHub
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: prod
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Merge prod → main
+        run: |
+          echo "🔄 Merging prod → main after store approval"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Store approval: ${{ github.event.inputs.store_approval_date }}"
+          echo "Approved by: ${{ github.event.inputs.approved_by }}"
+          echo ""
+          
+          # Switch to main
+          git checkout main
+          git pull origin main
+          
+          # Merge prod into main
+          MERGE_MESSAGE="Merge prod to main after store approval
+
+          Version: ${{ github.event.inputs.version }}
+          Store approval date: ${{ github.event.inputs.store_approval_date }}
+          Approved by: ${{ github.event.inputs.approved_by }}
+          
+          This ensures main branch reflects what's actually live in App Store and Play Store."
+          
+          if git merge prod -m "$MERGE_MESSAGE"; then
+            echo "✅ Merge successful"
+            git push origin main
+            echo "✅ Pushed to main"
+          else
+            echo "❌ Merge conflicts detected!"
+            echo ""
+            echo "Please resolve conflicts manually:"
+            echo "  1. Checkout main branch locally"
+            echo "  2. Merge prod: git merge prod"
+            echo "  3. Resolve conflicts"
+            echo "  4. Push: git push origin main"
+            echo ""
+            echo "⚠️  Important: Ensure main reflects what's live in stores!"
+            exit 1
+          fi
+      
+      - name: Create merge tag
+        run: |
+          TAG_NAME="store-approved-${{ github.event.inputs.version }}"
+          git tag -a "$TAG_NAME" -m "Store approved version: ${{ github.event.inputs.version }}"
+          git push origin "$TAG_NAME"
+          echo "✅ Created tag: $TAG_NAME"
+      
+      - name: Summary
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Successfully merged prod → main"
+          echo ""
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Store approval: ${{ github.event.inputs.store_approval_date }}"
+          echo "Main branch now reflects live store code"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+

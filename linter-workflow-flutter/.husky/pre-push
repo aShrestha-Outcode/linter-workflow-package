@@ -1,0 +1,24 @@
+#!/bin/sh
+# .husky/pre-push
+# Full quality gate before push: format check, analyze, metrics, tests
+
+set -e
+
+echo "🚀 Running pre-push checks..."
+
+# Check branch protection first (prevents direct pushes to protected branches)
+if [ -f ".husky/pre-push-branch-protection" ]; then
+  if ! . .husky/pre-push-branch-protection; then
+    exit 1
+  fi
+fi
+
+echo "🚀 Running pre-push quality checks..."
+
+# Run full quality check (format check, analyze, metrics, tests)
+npm run quality:check || {
+  echo "❌ Pre-push quality checks failed. Please fix the issues above."
+  exit 1
+}
+
+echo "✅ Pre-push checks passed."

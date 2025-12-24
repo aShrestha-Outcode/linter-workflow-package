@@ -1,0 +1,156 @@
+name: Deploy to UAT
+
+on:
+  # Trigger when PR from develop → uat is merged
+  pull_request:
+    types: [closed]
+    branches: 
+      - uat  # Only PRs TO uat branch (target branch)
+  # Manual trigger (for testing)
+  workflow_dispatch:
+    inputs:
+      skip_quality:
+        description: 'Skip quality checks (not recommended)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  # Verify PR was merged (not just closed)
+  check-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Verify PR was merged
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+              echo "❌ PR was closed without merging. Deployment skipped."
+              exit 1
+            fi
+            echo "✅ PR merged successfully: ${{ github.event.pull_request.title }}"
+            echo "   From: ${{ github.event.pull_request.head.ref }}"
+            echo "   To: ${{ github.event.pull_request.base.ref }}"
+            echo "   Quality checks already passed (required for PR merge)"
+          else
+            echo "⚠️ Manual trigger - ensure quality checks have passed"
+          fi
+
+  deploy-uat:
+    needs: check-merge
+    if: github.event.pull_request.merged == true || (github.event_name == 'workflow_dispatch' && github.event.inputs.skip_quality != 'true')
+    runs-on: ubuntu-latest
+    environment: uat
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Use the merged commit (after PR merge)
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
+      
+      - name: Read Flutter version from .fvmrc
+        id: flutter-version
+        run: |
+          if [ -f .fvmrc ]; then
+            FLUTTER_VERSION=$(grep -E '^flutterSdkVersion:' .fvmrc | sed 's/flutterSdkVersion: *"\(.*\)"/\1/' | tr -d ' ')
+            echo "version=$FLUTTER_VERSION" >> $GITHUB_OUTPUT
+          else
+            # Default to latest stable Flutter version
+            # Flutter 3.38.4 includes Dart 3.10.3+
+            echo "version=3.38.4" >> $GITHUB_OUTPUT
+          fi
+          echo "Using Flutter version: ${{ steps.flutter-version.outputs.version }}"
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: 'stable'
+          cache: true
+      
+      - name: Verify Flutter version
+        run: |
+          flutter --version
+          echo "Flutter SDK version check:"
+          flutter --version | grep -E "Flutter|Dart" || true
+      
+      - name: Install dependencies
+        run: |
+          flutter pub get
+      
+      - name: Build for UAT
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🏗️  Building for UAT environment..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📱 [MOCK] Building Android APK..."
+          echo "   Command: flutter build apk --release --dart-define=ENV=uat"
+          sleep 2
+          echo "   ✓ Building release APK..."
+          echo "   ✓ APK built: build/app/outputs/flutter-apk/app-release.apk"
+          echo "   ✓ Size: 15.2 MB"
+          echo ""
+          echo "🍎 [MOCK] Building iOS app..."
+          echo "   Command: flutter build ios --release --dart-define=ENV=uat"
+          sleep 2
+          echo "   ✓ Building iOS release..."
+          echo "   ✓ IPA built: build/ios/ipa/app.ipa"
+          echo "   ✓ Size: 18.5 MB"
+          echo ""
+          echo "✅ Build completed successfully!"
+      
+      - name: Deploy to UAT
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 Deploying to UAT environment..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "🔥 [MOCK] Uploading to Firebase App Distribution..."
+          echo "   Command: firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk"
+          sleep 2
+          echo "   ✓ Uploading APK..."
+          echo "   ✓ APK uploaded successfully"
+          echo "   ✓ Distribution URL: https://appdistribution.firebase.dev/i/abc123"
+          echo "   ✓ Testers notified via email"
+          echo ""
+          echo "✈️  [MOCK] Uploading to TestFlight (iOS)..."
+          echo "   Command: xcrun altool --upload-app --file build/ios/ipa/app.ipa"
+          sleep 2
+          echo "   ✓ Uploading IPA to App Store Connect..."
+          echo "   ✓ Build uploaded: 1.0.0 (123)"
+          echo "   ✓ Processing for TestFlight..."
+          echo "   ✓ TestFlight link: https://testflight.apple.com/join/xyz789"
+          echo ""
+          echo "📱 [MOCK] Uploading to Play Store Internal Testing..."
+          echo "   Command: fastlane android internal"
+          sleep 2
+          echo "   ✓ Uploading AAB to Play Console..."
+          echo "   ✓ Version: 1.0.0"
+          echo "   ✓ Track: Internal testing"
+          echo "   ✓ Play Console: https://play.google.com/console/internal-test"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ UAT Deployment Completed Successfully!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "   • Android: Firebase App Distribution + Play Store Internal"
+          echo "   • iOS: TestFlight"
+          echo "   • Environment: UAT"
+          echo "   • Branch: uat"
+          echo "   • Commit: ${{ github.sha }}"
+          echo ""
+          echo "⚠️  NOTE: This is a MOCK deployment for testing workflow flow"
+          echo "   In production, replace with actual deployment commands"
+      
+      - name: Notify team (Mock)
+        run: |
+          echo ""
+          echo "📢 [MOCK] Sending notifications..."
+          echo "   ✓ Slack notification sent to #deployments"
+          echo "   ✓ Email sent to QA team"
+          echo "   ✓ Deployment dashboard updated"
+
