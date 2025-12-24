@@ -61,6 +61,36 @@ select_language() {
   done
   echo ""
   
+  # Check if stdin is a terminal (interactive mode)
+  if [ ! -t 0 ]; then
+    echo -e "   ${YELLOW}⚠️${NC}  Non-interactive mode detected (piped input)"
+    echo ""
+    echo -e "   ${BLUE}To use this script interactively, download it first:${NC}"
+    echo -e "   ${GREEN}curl -fsSL https://raw.githubusercontent.com/aShrestha-Outcode/linter-workflow-package/main/install.sh -o install.sh${NC}"
+    echo -e "   ${GREEN}bash install.sh${NC}"
+    echo ""
+    echo -e "   ${BLUE}Or set the language via environment variable:${NC}"
+    echo -e "   ${GREEN}OUTCODE_LANGUAGE=flutter curl -fsSL ... | bash${NC}"
+    echo ""
+    
+    # Try to use environment variable as fallback
+    if [ -n "${OUTCODE_LANGUAGE:-}" ]; then
+      SELECTED_LANGUAGE="$OUTCODE_LANGUAGE"
+      LANGUAGE_FOLDER=$(get_language_folder "$SELECTED_LANGUAGE")
+      if [ -n "$LANGUAGE_FOLDER" ]; then
+        echo -e "   ${GREEN}Using language from OUTCODE_LANGUAGE: $SELECTED_LANGUAGE${NC}"
+        return 0
+      else
+        echo -e "   ${RED}Invalid language in OUTCODE_LANGUAGE: $OUTCODE_LANGUAGE${NC}"
+        exit 1
+      fi
+    else
+      echo -e "   ${RED}No language specified. Please download and run the script interactively.${NC}"
+      exit 1
+    fi
+  fi
+  
+  # Interactive mode - read from terminal
   while true; do
     read -p "Select language (1-$count): " choice
     
