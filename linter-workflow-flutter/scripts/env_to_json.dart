@@ -6,10 +6,6 @@ import 'dart:io';
 
 void main(final List<String> args) {
   if (args.length != 2) {
-    print('Usage: dart scripts/env_to_json.dart <env_file> <output_json>');
-    print(
-      'Example: dart scripts/env_to_json.dart .dev.env .dart_defines/dev.json',
-    );
     exit(1);
   }
 
@@ -19,7 +15,6 @@ void main(final List<String> args) {
   final File file = File(envFile);
 
   if (!file.existsSync()) {
-    print('Error: File $envFile not found');
     exit(1);
   }
 
@@ -61,5 +56,4 @@ void main(final List<String> args) {
   final String jsonContent = const JsonEncoder.withIndent('  ').convert(envVars);
   File(outputFile).writeAsStringSync(jsonContent);
 
-  print('Successfully converted $envFile to $outputFile');
 }
