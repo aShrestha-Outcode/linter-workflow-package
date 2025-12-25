@@ -1,0 +1,12 @@
+# Root-level analysis options for the linter-workflow-package repository
+# This excludes template package directories from Dart analysis
+# since they are meant to be copied to Flutter projects, not analyzed here
+
+analyzer:
+  exclude:
+    - linter-workflow-flutter/
+    - linter-workflow-reactnative/
+    - "**/node_modules/**"
+  errors:
+    # Suppress warnings about missing package includes in template files
+    include_file_not_found: ignore

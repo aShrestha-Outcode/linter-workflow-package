@@ -1,0 +1,49 @@
+#!/bin/sh
+# .husky/pre-push-branch-protection
+# Prevents direct pushes to protected branches (local safeguard)
+
+# Allow bypass for setup/workflow configuration (use sparingly!)
+# Usage: ALLOW_PROTECTED_BRANCHES=true git push origin branch
+if [ "$ALLOW_PROTECTED_BRANCHES" = "true" ]; then
+  echo "⚠️  WARNING: Bypassing branch protection (ALLOW_PROTECTED_BRANCHES=true)"
+  echo "   This should only be used during initial setup or workflow configuration."
+  return 0
+fi
+
+# Protected branches (cannot push directly - must use PRs)
+PROTECTED_BRANCHES="main develop uat prod"
+
+# Get current branch name
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+# If we can't determine branch, skip check (might be in detached HEAD state)
+if [ -z "$CURRENT_BRANCH" ]; then
+  return 0
+fi
+
+# Check if current branch is protected
+for branch in $PROTECTED_BRANCHES; do
+  if [ "$CURRENT_BRANCH" = "$branch" ]; then
+    echo "❌ ERROR: Direct pushes to '$branch' are not allowed!"
+    echo ""
+    echo "Please create a pull request instead:"
+    echo "  1. Create a feature branch: git checkout -b feature/your-feature"
+    echo "  2. Push your changes: git push origin feature/your-feature"
+    echo "  3. Create a PR on GitHub: $branch ← feature/your-feature"
+    echo ""
+    echo "⚠️  Note: This is a local check. GitHub branch protection rules"
+    echo "   will also block direct pushes server-side."
+    echo ""
+    echo "To bypass this check (for setup only):"
+    echo "  ALLOW_PROTECTED_BRANCHES=true git push origin $branch"
+    echo ""
+    echo "Or use --no-verify (NOT RECOMMENDED):"
+    echo "  git push --no-verify origin $branch"
+    return 1
+  fi
+done
+
+# Branch is not protected, allow push
+# Don't exit here - return 0 instead so the parent script continues
+return 0
+

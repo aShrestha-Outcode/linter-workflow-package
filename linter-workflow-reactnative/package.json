@@ -1,0 +1,43 @@
+{
+  "name": "outcode_reactnative_app",
+  "version": "1.0.0",
+  "description": "A new React Native project.",
+  "main": "commitlint.config.js",
+  "directories": {
+    "src": "src",
+    "test": "__tests__"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "quality:quick": "bash tool/quality.sh quick",
+    "quality:check": "bash tool/quality.sh check",
+    "quality:ci": "bash tool/quality.sh ci",
+    "validate": "bash tool/validate-setup.sh"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@react-native/eslint-config": "^0.76.0",
+    "@react-native/typescript-config": "^0.76.0",
+    "eslint": "^8.57.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.2.5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "author": "",
+  "license": "ISC"
+}
+

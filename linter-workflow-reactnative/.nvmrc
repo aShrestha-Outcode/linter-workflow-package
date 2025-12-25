@@ -1,0 +1,5 @@
+20
+# Recommended: Pin Node.js version for consistent tooling
+# Install nvm: https://github.com/nvm-sh/nvm
+# Usage: nvm install && nvm use
+

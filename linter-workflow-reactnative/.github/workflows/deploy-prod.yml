@@ -1,0 +1,177 @@
+name: Deploy to Production
+
+on:
+  # Trigger when PR from uat → prod is merged
+  pull_request:
+    types: [closed]
+    branches: 
+      - prod  # Only PRs TO prod branch (target branch)
+  # Manual trigger (requires approval)
+  workflow_dispatch:
+    inputs:
+      skip_quality:
+        description: 'Skip quality checks (NOT RECOMMENDED)'
+        required: false
+        default: 'false'
+        type: boolean
+      version:
+        description: 'Version tag (e.g., v1.1.0)'
+        required: true
+        type: string
+
+jobs:
+  # Verify PR was merged (not just closed)
+  check-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Verify PR was merged
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+              echo "❌ PR was closed without merging. Deployment skipped."
+              exit 1
+            fi
+            echo "✅ PR merged successfully: ${{ github.event.pull_request.title }}"
+            echo "   From: ${{ github.event.pull_request.head.ref }}"
+            echo "   To: ${{ github.event.pull_request.base.ref }}"
+            echo "   Quality checks already passed (required for PR merge)"
+          else
+            if [ "${{ github.event.inputs.skip_quality }}" != "true" ]; then
+              echo "⚠️ Manual trigger - ensure quality checks have passed!"
+              echo "⚠️ Production deployment requires quality checks to pass"
+            fi
+          fi
+
+  # Tag the release
+  tag-release:
+    needs: check-merge
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
+          fetch-depth: 0
+      
+      - name: Create version tag
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="v$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "Creating tag: $VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Production release: $VERSION"
+          git push origin "$VERSION" || echo "Tag may already exist"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+  deploy-prod:
+    needs: [check-merge, tag-release]
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production  # Requires approval in GitHub settings
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build for Production
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🏗️  Building for PRODUCTION environment..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Version: ${{ env.VERSION }}"
+          echo "Branch: prod"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "📱 [MOCK] Building Android App Bundle..."
+          echo "   Command: cd android && ./gradlew bundleRelease"
+          sleep 3
+          echo "   ✓ Building release AAB..."
+          echo "   ✓ AAB built: android/app/build/outputs/bundle/release/app-release.aab"
+          echo "   ✓ Size: 14.8 MB"
+          echo "   ✓ Signed with production keystore"
+          echo ""
+          echo "🍎 [MOCK] Building iOS app for App Store..."
+          echo "   Command: cd ios && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release archive"
+          sleep 3
+          echo "   ✓ Building iOS release..."
+          echo "   ✓ Archive created: ios/build/App.xcarchive"
+          echo "   ✓ Ready for App Store submission"
+          echo ""
+          echo "✅ All builds completed successfully!"
+      
+      - name: Deploy to Production
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 DEPLOYING TO PRODUCTION..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "Version: ${{ env.VERSION }}"
+          echo ""
+          echo "📱 [MOCK] Uploading to Google Play Store..."
+          echo "   Command: fastlane android production"
+          sleep 3
+          echo "   ✓ Uploading AAB to Play Console..."
+          echo "   ✓ Version: ${{ env.VERSION }}"
+          echo "   ✓ Track: Production"
+          echo "   ✓ Play Console: https://play.google.com/console/production"
+          echo "   ✓ Status: Submitted for review"
+          echo "   ✓ Review time: 1-3 days"
+          echo ""
+          echo "🍎 [MOCK] Uploading to Apple App Store..."
+          echo "   Command: fastlane ios production"
+          sleep 3
+          echo "   ✓ Uploading to App Store Connect..."
+          echo "   ✓ Version: ${{ env.VERSION }}"
+          echo "   ✓ Build: 1.0.0 (456)"
+          echo "   ✓ App Store Connect: https://appstoreconnect.apple.com/apps/123456"
+          echo "   ✓ Status: Waiting for review"
+          echo "   ✓ Review time: 1-2 days"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Production Deployment Completed!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "   • Version: ${{ env.VERSION }}"
+          echo "   • Android: Play Store (submitted for review)"
+          echo "   • iOS: App Store (waiting for review)"
+          echo "   • Branch: prod"
+          echo "   • Commit: ${{ github.sha }}"
+          echo ""
+          echo "⏳ Next Steps:"
+          echo "   1. Wait for Apple/Google store approval"
+          echo "   2. After approval, run 'Merge Prod to Main' workflow"
+          echo "   3. This ensures main branch reflects live store code"
+          echo ""
+          echo "⚠️  NOTE: This is a MOCK deployment for testing workflow flow"
+          echo "   In production, replace with actual deployment commands"
+      
+      - name: Notify team (Mock)
+        run: |
+          echo ""
+          echo "📢 [MOCK] Sending notifications..."
+          echo "   ✓ Slack notification sent to #production-deployments"
+          echo "   ✓ Email sent to engineering team"
+          echo "   ✓ PagerDuty alert configured"
+          echo "   ✓ Deployment dashboard updated"
+          echo "   ✓ Release notes published"
+

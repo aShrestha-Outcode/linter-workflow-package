@@ -1,10 +1,10 @@
 #!/bin/bash
-# Outcode Flutter Linter & Workflow Setup Script
-# Copies all files from linter-workflow-package to the Flutter project root
+# Outcode React Native Linter & Workflow Setup Script
+# Copies all files from linter-workflow-package to the React Native project root
 #
 # Usage:
-#   1. Copy linter-workflow-package folder to your Flutter project
-#   2. cd into your Flutter project
+#   1. Copy linter-workflow-package folder to your React Native project
+#   2. cd into your React Native project
 #   3. Run: ./linter-workflow-package/setup.sh
 #
 # Or run from inside the package folder:
@@ -35,18 +35,30 @@ else
 fi
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🚀 Outcode Flutter Linter & Workflow Setup${NC}"
+echo -e "${BLUE}🚀 Outcode React Native Linter & Workflow Setup${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "Package directory: ${GREEN}$PACKAGE_DIR${NC}"
 echo -e "Project root: ${GREEN}$PROJECT_ROOT${NC}"
 echo ""
 
-# Verify we're in a Flutter project
-if [ ! -f "$PROJECT_ROOT/pubspec.yaml" ]; then
-  echo -e "${RED}❌ Error: $PROJECT_ROOT is not a Flutter project (pubspec.yaml not found)${NC}"
-  echo "   Please ensure linter-workflow-package is inside your Flutter project directory"
+# Verify we're in a React Native project
+if [ ! -f "$PROJECT_ROOT/package.json" ]; then
+  echo -e "${RED}❌ Error: $PROJECT_ROOT is not a React Native project (package.json not found)${NC}"
+  echo "   Please ensure linter-workflow-package is inside your React Native project directory"
   exit 1
+fi
+
+# Check for React Native indicators (app.json, app.config.js, or react-native dependency)
+if [ ! -f "$PROJECT_ROOT/app.json" ] && [ ! -f "$PROJECT_ROOT/app.config.js" ]; then
+  if ! grep -q "react-native" "$PROJECT_ROOT/package.json" 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  Warning: app.json/app.config.js not found and react-native not in dependencies${NC}"
+    echo -e "   This might not be a React Native project"
+    read -p "   Continue anyway? (y/N): " CONTINUE
+    if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+      exit 1
+    fi
+  fi
 fi
 
 # Verify package directory exists and has required files
@@ -58,7 +70,7 @@ fi
 
 # Step counter
 STEP=1
-total_steps=15
+total_steps=11
 
 print_step() {
   echo -e "${BLUE}[$STEP/$total_steps]${NC} $1"
@@ -67,7 +79,7 @@ print_step() {
 
 # Step 1: Copy root-level files
 print_step "Copying root-level configuration files..."
-for file in package.json analysis_options.yaml commitlint.config.js .fvmrc .nvmrc .example.env; do
+for file in package.json .eslintrc.js .prettierrc .prettierignore commitlint.config.js .nvmrc; do
   if [ -f "$PACKAGE_DIR/$file" ]; then
     if [ -f "$PROJECT_ROOT/$file" ]; then
       if [ "$file" = "package.json" ]; then
@@ -99,7 +111,7 @@ if [ -f "$PACKAGE_DIR/.gitignore" ]; then
     TEMP_GITIGNORE=$(mktemp)
     cat "$PROJECT_ROOT/.gitignore" > "$TEMP_GITIGNORE"
     echo "" >> "$TEMP_GITIGNORE"
-    echo "# Outcode Flutter Standards (added by setup script)" >> "$TEMP_GITIGNORE"
+    echo "# Outcode React Native Standards (added by setup script)" >> "$TEMP_GITIGNORE"
     # Add entries from package that don't exist in project
     while IFS= read -r line; do
       if [[ ! "$line" =~ ^#.*$ ]] && [[ -n "$line" ]]; then
@@ -158,67 +170,7 @@ if [ -d "$PACKAGE_DIR/tool" ]; then
   echo -e "   ${GREEN}✅${NC} Quality check scripts copied"
 fi
 
-# Step 6: Copy scripts directory
-print_step "Copying build and utility scripts..."
-if [ -d "$PACKAGE_DIR/scripts" ]; then
-  mkdir -p "$PROJECT_ROOT/scripts"
-  # Copy all scripts and make them executable
-  for script in "$PACKAGE_DIR/scripts"/*; do
-    if [ -f "$script" ]; then
-      script_name=$(basename "$script")
-      cp "$script" "$PROJECT_ROOT/scripts/$script_name"
-      chmod +x "$PROJECT_ROOT/scripts/$script_name"
-      echo -e "   ${GREEN}✅${NC} Copied $script_name"
-    fi
-  done
-  echo -e "   ${GREEN}✅${NC} Build and utility scripts copied"
-fi
-
-# Step 7: Copy .vscode directory
-print_step "Copying VS Code configuration..."
-if [ -d "$PACKAGE_DIR/.vscode" ]; then
-  mkdir -p "$PROJECT_ROOT/.vscode"
-  # Copy all VS Code config files
-  for config_file in "$PACKAGE_DIR/.vscode"/*; do
-    if [ -f "$config_file" ]; then
-      config_name=$(basename "$config_file")
-      if [ -f "$PROJECT_ROOT/.vscode/$config_name" ]; then
-        echo -e "   ${YELLOW}⚠️${NC}  $config_name already exists in .vscode/"
-        read -p "   Overwrite? (y/N): " OVERWRITE
-        if [[ "$OVERWRITE" =~ ^[Yy]$ ]]; then
-          cp "$config_file" "$PROJECT_ROOT/.vscode/$config_name"
-          echo -e "   ${GREEN}✅${NC} Overwritten $config_name"
-        else
-          echo -e "   ${YELLOW}⏭️${NC}  Skipped $config_name"
-        fi
-      else
-        cp "$config_file" "$PROJECT_ROOT/.vscode/$config_name"
-        echo -e "   ${GREEN}✅${NC} Copied $config_name"
-      fi
-    fi
-  done
-  echo -e "   ${GREEN}✅${NC} VS Code configuration copied"
-fi
-
-# Step 8: Create environment files
-print_step "Creating environment files..."
-if [ -f "$PROJECT_ROOT/.example.env" ]; then
-  # Create .dev.env, .uat.env, and .prod.env from .example.env if they don't exist
-  for env_file in .dev.env .uat.env .prod.env; do
-    if [ -f "$PROJECT_ROOT/$env_file" ]; then
-      echo -e "   ${YELLOW}ℹ️${NC}  $env_file already exists, skipping"
-    else
-      cp "$PROJECT_ROOT/.example.env" "$PROJECT_ROOT/$env_file"
-      echo -e "   ${GREEN}✅${NC} Created $env_file from .example.env"
-      echo -e "   ${YELLOW}⚠️${NC}  Remember to fill in actual values in $env_file"
-    fi
-  done
-  echo -e "   ${GREEN}✅${NC} Environment files created"
-else
-  echo -e "   ${YELLOW}⚠️${NC}  .example.env not found, skipping environment file creation"
-fi
-
-# Step 9: Copy engineering documentation
+# Step 6: Copy engineering documentation
 print_step "Copying engineering documentation..."
 if [ -d "$PACKAGE_DIR/docs/engineering" ]; then
   mkdir -p "$PROJECT_ROOT/docs/engineering"
@@ -233,109 +185,7 @@ if [ -d "$PACKAGE_DIR/docs/engineering" ]; then
   echo -e "   ${GREEN}✅${NC} Engineering documentation copied"
 fi
 
-# Step 10: Add very_good_analysis to pubspec.yaml
-print_step "Updating pubspec.yaml with very_good_analysis..."
-cd "$PROJECT_ROOT"
-if [ -f "$PROJECT_ROOT/pubspec.yaml" ]; then
-  # Check if very_good_analysis is already in dev_dependencies
-  if grep -q "very_good_analysis" "$PROJECT_ROOT/pubspec.yaml"; then
-    echo -e "   ${YELLOW}ℹ️${NC}  very_good_analysis already in pubspec.yaml"
-  else
-    # Check if dev_dependencies section exists
-    if grep -q "^dev_dependencies:" "$PROJECT_ROOT/pubspec.yaml"; then
-      # dev_dependencies exists, add very_good_analysis to it
-      # Find the last line in dev_dependencies section and add after it
-      TEMP_PUBSPEC=$(mktemp)
-      IN_DEV_DEPS=false
-      ADDED=false
-      
-      while IFS= read -r line || [ -n "$line" ]; do
-        if echo "$line" | grep -qE "^dev_dependencies:"; then
-          IN_DEV_DEPS=true
-          echo "$line" >> "$TEMP_PUBSPEC"
-        elif [ "$IN_DEV_DEPS" = true ] && [ "$ADDED" = false ]; then
-          # Check if we've left dev_dependencies (new top-level key or empty line followed by top-level key)
-          if echo "$line" | grep -qE "^[a-z]"; then
-            # New top-level section, add very_good_analysis before it
-            echo "  very_good_analysis: ^10.0.0" >> "$TEMP_PUBSPEC"
-            echo "$line" >> "$TEMP_PUBSPEC"
-            ADDED=true
-            IN_DEV_DEPS=false
-          else
-            # Still in dev_dependencies, keep the line
-            echo "$line" >> "$TEMP_PUBSPEC"
-          fi
-        else
-          echo "$line" >> "$TEMP_PUBSPEC"
-        fi
-      done < "$PROJECT_ROOT/pubspec.yaml"
-      
-      # If we were still in dev_dependencies at end of file, add it
-      if [ "$IN_DEV_DEPS" = true ] && [ "$ADDED" = false ]; then
-        echo "  very_good_analysis: ^10.0.0" >> "$TEMP_PUBSPEC"
-        ADDED=true
-      fi
-      
-      mv "$TEMP_PUBSPEC" "$PROJECT_ROOT/pubspec.yaml"
-      
-      if [ "$ADDED" = true ]; then
-        echo -e "   ${GREEN}✅${NC} Added very_good_analysis to dev_dependencies"
-      else
-        echo -e "   ${YELLOW}⚠️${NC}  Could not automatically add very_good_analysis"
-        echo -e "   ${YELLOW}   Please add 'very_good_analysis: ^10.0.0' to dev_dependencies manually${NC}"
-      fi
-    else
-      # dev_dependencies doesn't exist, add it before flutter: section
-      TEMP_PUBSPEC=$(mktemp)
-      ADDED=false
-      
-      while IFS= read -r line || [ -n "$line" ]; do
-        if echo "$line" | grep -qE "^flutter:" && [ "$ADDED" = false ]; then
-          echo "" >> "$TEMP_PUBSPEC"
-          echo "dev_dependencies:" >> "$TEMP_PUBSPEC"
-          echo "  very_good_analysis: ^10.0.0" >> "$TEMP_PUBSPEC"
-          echo "$line" >> "$TEMP_PUBSPEC"
-          ADDED=true
-        else
-          echo "$line" >> "$TEMP_PUBSPEC"
-        fi
-      done < "$PROJECT_ROOT/pubspec.yaml"
-      
-      mv "$TEMP_PUBSPEC" "$PROJECT_ROOT/pubspec.yaml"
-      
-      if [ "$ADDED" = true ]; then
-        echo -e "   ${GREEN}✅${NC} Added dev_dependencies section with very_good_analysis"
-      else
-        echo -e "   ${YELLOW}⚠️${NC}  Could not automatically add dev_dependencies"
-        echo -e "   ${YELLOW}   Please add dev_dependencies section with very_good_analysis manually${NC}"
-      fi
-    fi
-  fi
-else
-  echo -e "   ${RED}❌${NC} pubspec.yaml not found"
-  exit 1
-fi
-
-# Step 11: Install Flutter dependencies
-print_step "Installing Flutter dependencies..."
-cd "$PROJECT_ROOT"
-if ! command -v flutter &> /dev/null && ! command -v fvm &> /dev/null; then
-  echo -e "   ${YELLOW}⚠️${NC}  Flutter not found. Skipping flutter pub get"
-  echo -e "   ${YELLOW}   Please run 'flutter pub get' manually after installing Flutter${NC}"
-else
-  # Use FVM if available and .fvmrc exists
-  if command -v fvm &> /dev/null && [ -f "$PROJECT_ROOT/.fvmrc" ]; then
-    fvm flutter pub get
-    echo -e "   ${GREEN}✅${NC} Flutter dependencies installed (via FVM)"
-  elif command -v flutter &> /dev/null; then
-    flutter pub get
-    echo -e "   ${GREEN}✅${NC} Flutter dependencies installed"
-  else
-    echo -e "   ${YELLOW}⚠️${NC}  Flutter command not found. Skipping flutter pub get"
-  fi
-fi
-
-# Step 12: Initialize Git (needed for Husky)
+# Step 7: Initialize Git (needed for Husky)
 print_step "Initializing Git repository (required for Husky hooks)..."
 cd "$PROJECT_ROOT"
 
@@ -347,7 +197,7 @@ else
   echo -e "   ${YELLOW}ℹ️${NC}  Git repository already exists"
 fi
 
-# Step 13: Install npm dependencies
+# Step 8: Install npm dependencies
 print_step "Installing npm dependencies..."
 cd "$PROJECT_ROOT"
 if ! command -v npm &> /dev/null; then
@@ -357,7 +207,7 @@ fi
 npm install
 echo -e "   ${GREEN}✅${NC} npm dependencies installed"
 
-# Step 14: Set up Husky hooks (ensure Git hooks path is configured)
+# Step 9: Set up Husky hooks (ensure Git hooks path is configured)
 print_step "Setting up Husky Git hooks..."
 cd "$PROJECT_ROOT"
 # Explicitly run husky install to ensure Git hooks path is configured
@@ -376,7 +226,7 @@ else
   echo -e "   ${GREEN}✅${NC} Git hooks path configured"
 fi
 
-# Step 15: Setup branches (optional)
+# Step 10: Setup branches (optional)
 print_step "Setting up Git branches (optional)..."
 
 # Ask if user wants to set up GitHub remote
@@ -410,13 +260,13 @@ if [[ "$SETUP_BRANCHES" =~ ^[Yy]$ ]]; then
   git add .
   
   # Create initial commit
-  git commit -m "chore: setup Outcode Flutter code quality standards
+  git commit -m "chore: setup Outcode React Native code quality standards
 
 - Add Husky hooks for commit message validation and quality checks
 - Add GitHub Actions workflows for CI/CD
 - Add code quality scripts and configuration
 - Add engineering documentation
-- Configure version pinning (FVM, NVM)" || {
+- Configure version pinning (NVM)" || {
     echo -e "   ${YELLOW}⚠️${NC}  Commit failed (might be empty or already committed)"
   }
   echo -e "   ${GREEN}✅${NC} Initial commit created"
@@ -472,28 +322,23 @@ echo -e "${GREEN}✅ Setup Complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${BLUE}📋 What was set up:${NC}"
-echo "   ✅ package.json with Husky, Commitlint, lint-staged"
+echo "   ✅ package.json with Husky, Commitlint, lint-staged, ESLint, Prettier"
 echo "   ✅ npm dependencies installed"
-echo "   ✅ pubspec.yaml updated with very_good_analysis"
-echo "   ✅ Flutter dependencies installed"
 echo "   ✅ .gitignore updated"
 echo "   ✅ GitHub Actions workflows (quality, deploy-uat, deploy-prod, merge-prod-to-main)"
-echo "   ✅ Version pinning (.fvmrc, .nvmrc)"
-echo "   ✅ Code quality configuration (analysis_options.yaml)"
+echo "   ✅ Version pinning (.nvmrc)"
+echo "   ✅ Code quality configuration (.eslintrc.js, .prettierrc)"
 echo "   ✅ Commit message validation (commitlint.config.js)"
 echo "   ✅ Engineering documentation"
 echo "   ✅ Husky Git hooks (pre-commit, pre-push, commit-msg)"
 echo "   ✅ Husky hooks path configured in Git"
 echo "   ✅ Quality check scripts (tool/quality.sh, tool/validate-setup.sh)"
-echo "   ✅ Build and utility scripts (scripts/)"
-echo "   ✅ VS Code configuration (.vscode/)"
-echo "   ✅ Environment files (.example.env, .dev.env, .uat.env, .prod.env)"
 echo ""
 echo -e "${BLUE}📝 Next Steps:${NC}"
 echo ""
 echo "1. ${YELLOW}Verify setup:${NC}"
 echo "   npm run validate"
-echo "   ${BLUE}   Note:${NC} FVM and nvm warnings are optional - setup works without them"
+echo "   ${BLUE}   Note:${NC} nvm warnings are optional - setup works without them"
 echo ""
 echo "2. ${YELLOW}Test quality checks:${NC}"
 echo "   npm run quality:check"

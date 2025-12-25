@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate Dev Env JSON",
+      "type": "shell",
+      "command": "dart",
+      "args": [
+        "scripts/env_to_json.dart",
+        ".dev.env",
+        ".dart_defines/dev.json"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Generate UAT Env JSON",
+      "type": "shell",
+      "command": "dart",
+      "args": [
+        "scripts/env_to_json.dart",
+        ".uat.env",
+        ".dart_defines/uat.json"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Generate Prod Env JSON",
+      "type": "shell",
+      "command": "dart",
+      "args": [
+        "scripts/env_to_json.dart",
+        ".prod.env",
+        ".dart_defines/prod.json"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Setup All Environments",
+      "type": "shell",
+      "command": "./scripts/setup_env.sh",
+      "problemMatcher": []
+    }
+  ]
+}

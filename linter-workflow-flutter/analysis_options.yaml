@@ -45,6 +45,8 @@ linter:
     - test_types_in_equals
     - exhaustive_cases
     - always_put_required_named_parameters_first
+    - always_use_package_imports: ignore
+    - one_member_abstracts: ignore
     # Note: always_specify_types removed - conflicts with omit_local_variable_types from very_good_analysis
     # very_good_analysis provides better type inference rules
     - avoid_annotating_with_dynamic

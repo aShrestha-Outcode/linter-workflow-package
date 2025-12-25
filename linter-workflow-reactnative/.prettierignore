@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+build/
+dist/
+*.tgz
+*.tar.gz
+
+# Coverage
+coverage/
+
+# Generated files
+*.generated.*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# React Native
+android/app/build/
+ios/Pods/
+ios/build/
+

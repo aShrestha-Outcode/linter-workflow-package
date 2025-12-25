@@ -1,0 +1,25 @@
+#!/bin/sh
+# .husky/pre-commit
+# Fast pre-commit checks: formatting and linting staged files only
+
+set -e
+
+echo "🚀 Running pre-commit checks..."
+
+# Check branch protection first (prevents commits to protected branches)
+if [ -f ".husky/pre-commit-branch-protection" ]; then
+  if ! . .husky/pre-commit-branch-protection; then
+    exit 1
+  fi
+fi
+
+echo "🚀 Running pre-commit quality checks..."
+
+# Format and lint staged files using lint-staged
+npx --no-install lint-staged || {
+  echo "❌ Pre-commit checks failed. Please fix the issues above."
+  exit 1
+}
+
+echo "✅ Pre-commit checks passed."
+
